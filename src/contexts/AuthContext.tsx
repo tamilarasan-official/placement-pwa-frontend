@@ -59,13 +59,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(res.error || 'Login failed');
       }
     } catch (err: unknown) {
-      // Handle axios error responses (403 for status-based rejections)
       if (err && typeof err === 'object' && 'response' in err) {
+        // HTTP error (4xx/5xx) — extract server error message
         const axiosErr = err as { response?: { data?: { error?: string; status?: string } } };
         const errMsg = axiosErr.response?.data?.error || 'Login failed';
         throw new Error(errMsg);
       }
-      throw err;
+      if (err && typeof err === 'object' && 'request' in err) {
+        // Network error — request was made but no response received
+        throw new Error('Network error: Unable to reach server. Please try again.');
+      }
+      throw err instanceof Error ? err : new Error('Login failed');
     }
   };
 
@@ -90,7 +94,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const errMsg = axiosErr.response?.data?.error || 'Registration failed';
         throw new Error(errMsg);
       }
-      throw err;
+      if (err && typeof err === 'object' && 'request' in err) {
+        throw new Error('Network error: Unable to reach server. Please try again.');
+      }
+      throw err instanceof Error ? err : new Error('Registration failed');
     }
   };
 
